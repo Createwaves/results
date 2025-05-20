@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sailing Corrected Time Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #f0f8ff; /* Light blue background */
+            border: 1px solid #add8e6; /* Light blue border */
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #003366; /* Dark blue */
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            color: #003366; /* Dark blue */
+        }
+        input[type="number"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #b0c4de; /* Lighter blue border */
+            border-radius: 4px;
+            box-sizing: border-box; /* Important for width: 100% */
+            font-size: 1em;
+        }
+        button {
+            background-color: #003366; /* Dark blue */
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1em;
+            display: block;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #004080; /* Slightly darker blue on hover */
+        }
+        #result-area {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #e6f7ff; /* Very light blue for result */
+            border: 1px solid #99d6ff; /* Medium blue border for result */
+            border-radius: 4px;
+        }
+        #result-area h2 {
+            color: #003366;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        #result-area p {
+            margin: 8px 0;
+            font-size: 1em;
+            color: #333;
+        }
+        #result-area p strong {
+            color: #003366;
+        }
+        #display-corrected-time {
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #0056b3; /* Slightly different blue for emphasis */
+        }
+        .error-message {
+            color: #dc3545; /* Red for errors */
+            font-weight: bold;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sailing Corrected Time Calculator</h1>
+
+    <div class="form-group">
+        <label for="yardstick">Boat Yardstick (PN):</label>
+        <input type="number" id="yardstick" step="0.1" placeholder="e.g., 114.0">
+    </div>
+
+    <div class="form-group">
+        <label for="elapsed-time">Elapsed Time (hh:mm:ss):</label>
+        <input type="text" id="elapsed-time" placeholder="e.g., 01:30:45">
+    </div>
+
+    <button id="calculate-btn">Calculate Corrected Time</button>
+
+    <div id="error-message-container"></div>
+
+    <div id="result-area" style="display: none;">
+        <h2>Result:</h2>
+        <p><strong>Entered Yardstick:</strong> <span id="display-yardstick"></span></p>
+        <p><strong>Entered Elapsed Time:</strong> <span id="display-elapsed-time"></span></p>
+        <p><strong>Calculated Corrected Time:</strong> <span id="display-corrected-time"></span></p>
+    </div>
+
+    <script>
+        // --- Utility Functions ---
+        function isValidTimeFormat(timeStr) {
+            if (!timeStr) return false;
+            // Allows 1 or 2 digits for hours, requires 2 for minutes and seconds
+            const regex = /^([0-9]{1,2}):([0-5][0-9]):([0-5][0-9])$/;
+            return regex.test(timeStr);
+        }
+
+        function timeToSeconds(timeStr) {
+            if (!isValidTimeFormat(timeStr)) return 0;
+            const parts = timeStr.split(':');
+            const hours = parseInt(parts[0], 10);
+            const minutes = parseInt(parts[1], 10);
+            const seconds = parseInt(parts[2], 10);
+            return hours * 3600 + minutes * 60 + seconds;
+        }
+
+        function secondsToTime(totalSeconds) {
+            if (isNaN(totalSeconds) || totalSeconds === null || totalSeconds < 0) return '';
+            
+            totalSeconds = Math.round(totalSeconds); // Round to nearest second
+
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const secs = totalSeconds % 60;
+
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        // --- DOM Elements ---
+        const yardstickInput = document.getElementById('yardstick');
+        const elapsedTimeInput = document.getElementById('elapsed-time');
+        const calculateBtn = document.getElementById('calculate-btn');
+        const resultArea = document.getElementById('result-area');
+        const errorMessageContainer = document.getElementById('error-message-container');
+
+        const displayYardstick = document.getElementById('display-yardstick');
+        const displayElapsedTime = document.getElementById('display-elapsed-time');
+        const displayCorrectedTime = document.getElementById('display-corrected-time');
+
+        // --- Event Listener ---
+        calculateBtn.addEventListener('click', function() {
+            // Clear previous messages and hide result
+            errorMessageContainer.innerHTML = '';
+            resultArea.style.display = 'none';
+
+            const yardstickValue = parseFloat(yardstickInput.value);
+            const elapsedTimeValue = elapsedTimeInput.value.trim();
+
+            // --- Validation ---
+            let errors = [];
+            if (isNaN(yardstickValue) || yardstickValue <= 0) {
+                errors.push('Please enter a valid, positive Yardstick value.');
+            }
+            if (!isValidTimeFormat(elapsedTimeValue)) {
+                errors.push('Please enter Elapsed Time in hh:mm:ss format (e.g., 01:30:45).');
+            }
+
+            if (errors.length > 0) {
+                const errorDiv = document.createElement('div');
+                errorDiv.classList.add('error-message');
+                errorDiv.innerHTML = errors.join('<br>');
+                errorMessageContainer.appendChild(errorDiv);
+                if (isNaN(yardstickValue) || yardstickValue <= 0) yardstickInput.focus();
+                else elapsedTimeInput.focus();
+                return;
+            }
+
+            // --- Calculation ---
+            const elapsedSeconds = timeToSeconds(elapsedTimeValue);
+            // Formula: Corrected Time = Elapsed Time * 100 / Yardstick
+            const correctedSeconds = (elapsedSeconds * 100) / yardstickValue;
+            const correctedTimeString = secondsToTime(correctedSeconds);
+
+            // --- Display Results ---
+            displayYardstick.textContent = yardstickValue;
+            displayElapsedTime.textContent = elapsedTimeValue;
+            displayCorrectedTime.textContent = correctedTimeString;
+            resultArea.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
