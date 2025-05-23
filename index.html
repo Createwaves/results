@@ -100,8 +100,8 @@
     </div>
 
     <div class="form-group">
-        <label for="elapsed-time">Elapsed Time (hh:mm:ss):</label>
-        <input type="text" id="elapsed-time" placeholder="e.g., 01:30:45">
+        <label for="elapsed-time">Elapsed Time (hh:mm:ss or hh mm ss):</label>
+        <input type="text" id="elapsed-time" placeholder="e.g., 01:30:45 or 01 30 45">
     </div>
 
     <button id="calculate-btn">Calculate Corrected Time</button>
@@ -120,16 +120,30 @@
         function isValidTimeFormat(timeStr) {
             if (!timeStr) return false;
             // Allows 1 or 2 digits for hours, requires 2 for minutes and seconds
-            const regex = /^([0-9]{1,2}):([0-5][0-9]):([0-5][0-9])$/;
+            // Separator can be ':' or a space
+            const regex = /^([0-9]{1,2})[:\s]([0-5][0-9])[:\s]([0-5][0-9])$/;
             return regex.test(timeStr);
         }
 
         function timeToSeconds(timeStr) {
-            if (!isValidTimeFormat(timeStr)) return 0;
-            const parts = timeStr.split(':');
+            // This check uses the updated isValidTimeFormat which allows spaces
+            if (!isValidTimeFormat(timeStr)) return 0; 
+
+            // Normalize: replace spaces with colons to ensure consistent splitting
+            const normalizedTimeStr = timeStr.replace(/\s/g, ':');
+            
+            const parts = normalizedTimeStr.split(':');
+            // Due to isValidTimeFormat, parts should be 3 elements long and numeric.
+            // Add a defensive check in case of unexpected format that slipped through.
+            if (parts.length !== 3) return 0;
+
             const hours = parseInt(parts[0], 10);
             const minutes = parseInt(parts[1], 10);
             const seconds = parseInt(parts[2], 10);
+
+            if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
+                return 0; // Should not happen if isValidTimeFormat is robust
+            }
             return hours * 3600 + minutes * 60 + seconds;
         }
 
@@ -171,7 +185,7 @@
                 errors.push('Please enter a valid, positive Yardstick value.');
             }
             if (!isValidTimeFormat(elapsedTimeValue)) {
-                errors.push('Please enter Elapsed Time in hh:mm:ss format (e.g., 01:30:45).');
+                errors.push('Please enter Elapsed Time in hh:mm:ss or hh mm ss format (e.g., 01:30:45 or 01 30 45).');
             }
 
             if (errors.length > 0) {
@@ -192,7 +206,7 @@
 
             // --- Display Results ---
             displayYardstick.textContent = yardstickValue;
-            displayElapsedTime.textContent = elapsedTimeValue;
+            displayElapsedTime.textContent = elapsedTimeValue; // Display the user's original input
             displayCorrectedTime.textContent = correctedTimeString;
             resultArea.style.display = 'block';
         });
