@@ -92,8 +92,8 @@
 
         /* Styles for the new boat list */
         #boat-list-container {
-            max-height: 200px; /* Adjust as needed */
-            overflow-y: auto;
+            /* REMOVED: max-height: 200px; */
+            /* REMOVED: overflow-y: auto; */
             border: 1px solid #b0c4de;
             border-radius: 4px;
             padding: 5px;
@@ -154,6 +154,7 @@
         // --- Boat Data ---
         const boatsData = [
             { name: "Sabre", handicap: 127 },
+            { name: "RS Neo", handicap: 124.3 },
             { name: "Pacer", handicap: 127.5 },
             { name: "Pacer Non Spinnaker", handicap: 130.4 },
             { name: "Mirror", handicap: 143 },
