@@ -35,7 +35,7 @@
             padding: 10px;
             border: 1px solid #b0c4de; /* Lighter blue border */
             border-radius: 4px;
-            box-sizing: border-box; /* Important for width: 100% */
+            box-sizing: border-box;
             font-size: 1em;
         }
         button {
@@ -56,8 +56,8 @@
         #result-area {
             margin-top: 25px;
             padding: 15px;
-            background-color: #e6f7ff; /* Very light blue for result */
-            border: 1px solid #99d6ff; /* Medium blue border for result */
+            background-color: #e6f7ff;
+            border: 1px solid #99d6ff;
             border-radius: 4px;
         }
         #result-area h2 {
@@ -77,10 +77,10 @@
         #display-corrected-time {
             font-weight: bold;
             font-size: 1.2em;
-            color: #28a745; /* A nice green color */
+            color: #28a745;
         }
         .error-message {
-            color: #dc3545; /* Red for errors */
+            color: #dc3545;
             font-weight: bold;
             margin-top: 10px;
             padding: 10px;
@@ -89,14 +89,49 @@
             border-radius: 4px;
             text-align: center;
         }
+
+        /* Styles for the new boat list */
+        #boat-list-container {
+            max-height: 200px; /* Adjust as needed */
+            overflow-y: auto;
+            border: 1px solid #b0c4de;
+            border-radius: 4px;
+            padding: 5px;
+            background-color: white;
+            margin-bottom: 10px; /* Space between list and handicap input */
+        }
+        .boat-item {
+            padding: 8px 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.95em;
+        }
+        .boat-item:last-child {
+            border-bottom: none;
+        }
+        .boat-item:hover {
+            background-color: #e6f7ff;
+        }
+        .boat-item.selected {
+            background-color: #cce7ff; /* A slightly darker blue for selected */
+            font-weight: bold;
+            color: #003366;
+        }
     </style>
 </head>
 <body>
     <h1>Sailing Corrected Time Calculator</h1>
 
     <div class="form-group">
+        <label for="boat-list-container">Select Boat:</label>
+        <div id="boat-list-container">
+            <!-- Boat items will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <div class="form-group">
         <label for="yardstick">Boat Handicap:</label>
-        <input type="number" id="yardstick" step="0.1" placeholder="e.g., 118.5 or 127">
+        <input type="number" id="yardstick" step="0.1" placeholder="Select from list or enter e.g., 118.5">
     </div>
 
     <div class="form-group">
@@ -110,79 +145,108 @@
 
     <div id="result-area" style="display: none;">
         <h2>Result:</h2>
-        <p><strong>Entered Yardstick:</strong> <span id="display-yardstick"></span></p>
+        <p><strong>Selected Boat/Yardstick:</strong> <span id="display-yardstick"></span></p>
         <p><strong>Entered Elapsed Time:</strong> <span id="display-elapsed-time"></span></p>
         <p><strong>Calculated Corrected Time:</strong> <span id="display-corrected-time"></span></p>
     </div>
 
     <script>
+        // --- Boat Data ---
+        const boatsData = [
+            { name: "Sabre", handicap: 127 },
+            { name: "Pacer", handicap: 127.5 },
+            { name: "Pacer Non Spinnaker", handicap: 130.4 },
+            { name: "Mirror", handicap: 143 },
+            { name: "Mirror Non Spinnaker", handicap: 146.3 },
+            { name: "Impulse", handicap: 118.5 },
+            { name: "Contender", handicap: 106.5 },
+            { name: "Laser", handicap: 114 },
+            { name: "Laser Radial", handicap: 118.5 },
+            { name: "Moth Scow", handicap: 115 },
+            { name: "Alpha Omega", handicap: 88 },
+            { name: "Tasar", handicap: 108 },
+            { name: "59er", handicap: 96.4 }
+            { name: "RS Neo", handicap: 124.3 }
+        ];
+
         // --- Utility Functions ---
         function isValidTimeFormat(timeStr) {
             if (!timeStr) return false;
-            // Allows 1 or 2 digits for hours, requires 2 for minutes and seconds
-            // Separator can be ':' or a space
             const regex = /^([0-9]{1,2})[:\s]([0-5][0-9])[:\s]([0-5][0-9])$/;
             return regex.test(timeStr);
         }
 
         function timeToSeconds(timeStr) {
-            // This check uses the updated isValidTimeFormat which allows spaces
-            if (!isValidTimeFormat(timeStr)) return 0; 
-
-            // Normalize: replace spaces with colons to ensure consistent splitting
+            if (!isValidTimeFormat(timeStr)) return 0;
             const normalizedTimeStr = timeStr.replace(/\s/g, ':');
-            
             const parts = normalizedTimeStr.split(':');
-            // Due to isValidTimeFormat, parts should be 3 elements long and numeric.
-            // Add a defensive check in case of unexpected format that slipped through.
             if (parts.length !== 3) return 0;
-
             const hours = parseInt(parts[0], 10);
             const minutes = parseInt(parts[1], 10);
             const seconds = parseInt(parts[2], 10);
-
-            if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) {
-                return 0; // Should not happen if isValidTimeFormat is robust
-            }
+            if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return 0;
             return hours * 3600 + minutes * 60 + seconds;
         }
 
         function secondsToTime(totalSeconds) {
             if (isNaN(totalSeconds) || totalSeconds === null || totalSeconds < 0) return '';
-            
-            totalSeconds = Math.round(totalSeconds); // Round to nearest second
-
+            totalSeconds = Math.round(totalSeconds);
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const secs = totalSeconds % 60;
-
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         }
 
         // --- DOM Elements ---
+        const boatListContainer = document.getElementById('boat-list-container');
         const yardstickInput = document.getElementById('yardstick');
         const elapsedTimeInput = document.getElementById('elapsed-time');
         const calculateBtn = document.getElementById('calculate-btn');
         const resultArea = document.getElementById('result-area');
         const errorMessageContainer = document.getElementById('error-message-container');
-
         const displayYardstick = document.getElementById('display-yardstick');
         const displayElapsedTime = document.getElementById('display-elapsed-time');
         const displayCorrectedTime = document.getElementById('display-corrected-time');
 
-        // --- Event Listener ---
+        // --- Populate Boat List ---
+        function populateBoatList() {
+            boatListContainer.innerHTML = ''; // Clear existing items
+            boatsData.sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+
+            boatsData.forEach(boat => {
+                const boatItem = document.createElement('div');
+                boatItem.classList.add('boat-item');
+                boatItem.textContent = `${boat.name} (YS: ${boat.handicap})`;
+                boatItem.dataset.handicap = boat.handicap; // Store handicap in data attribute
+                boatItem.dataset.boatName = boat.name; // Store boat name for display
+
+                boatItem.addEventListener('click', function() {
+                    // Remove 'selected' class from any other item
+                    const currentSelected = boatListContainer.querySelector('.boat-item.selected');
+                    if (currentSelected) {
+                        currentSelected.classList.remove('selected');
+                    }
+                    // Add 'selected' class to the clicked item
+                    this.classList.add('selected');
+                    yardstickInput.value = this.dataset.handicap;
+                });
+                boatListContainer.appendChild(boatItem);
+            });
+        }
+
+        populateBoatList(); // Call to populate the list on page load
+
+        // --- Event Listener for Calculate Button ---
         calculateBtn.addEventListener('click', function() {
-            // Clear previous messages and hide result
             errorMessageContainer.innerHTML = '';
             resultArea.style.display = 'none';
 
             const yardstickValue = parseFloat(yardstickInput.value);
             const elapsedTimeValue = elapsedTimeInput.value.trim();
 
-            // --- Validation ---
             let errors = [];
             if (isNaN(yardstickValue) || yardstickValue <= 0) {
-                errors.push('Please enter a valid, positive Yardstick value.');
+                errors.push('Please select a boat or enter a valid, positive Boat Handicap.');
             }
             if (!isValidTimeFormat(elapsedTimeValue)) {
                 errors.push('Please enter Elapsed Time in hh:mm:ss or hh mm ss format (e.g., 01:30:45 or 01 30 45).');
@@ -193,23 +257,41 @@
                 errorDiv.classList.add('error-message');
                 errorDiv.innerHTML = errors.join('<br>');
                 errorMessageContainer.appendChild(errorDiv);
-                if (isNaN(yardstickValue) || yardstickValue <= 0) yardstickInput.focus();
-                else elapsedTimeInput.focus();
+                if (isNaN(yardstickValue) || yardstickValue <= 0) {
+                     yardstickInput.focus(); // Focus on the input if it's the issue
+                } else {
+                    elapsedTimeInput.focus();
+                }
                 return;
             }
 
-            // --- Calculation ---
             const elapsedSeconds = timeToSeconds(elapsedTimeValue);
-            // Formula: Corrected Time = Elapsed Time * 100 / Yardstick
             const correctedSeconds = (elapsedSeconds * 100) / yardstickValue;
             const correctedTimeString = secondsToTime(correctedSeconds);
 
-            // --- Display Results ---
-            displayYardstick.textContent = yardstickValue;
-            displayElapsedTime.textContent = elapsedTimeValue; // Display the user's original input
+            // Display logic: if a boat was selected, show its name too
+            const selectedBoatItem = boatListContainer.querySelector('.boat-item.selected');
+            let yardstickDisplayValue = yardstickValue;
+            if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.handicap) === yardstickValue) {
+                yardstickDisplayValue = `${selectedBoatItem.dataset.boatName} (YS: ${yardstickValue})`;
+            }
+
+
+            displayYardstick.textContent = yardstickDisplayValue;
+            displayElapsedTime.textContent = elapsedTimeValue;
             displayCorrectedTime.textContent = correctedTimeString;
             resultArea.style.display = 'block';
         });
+
+        // Clear boat selection if handicap is manually changed
+        yardstickInput.addEventListener('input', function() {
+            const currentHandicap = parseFloat(this.value);
+            const selectedBoatItem = boatListContainer.querySelector('.boat-item.selected');
+            if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.handicap) !== currentHandicap) {
+                selectedBoatItem.classList.remove('selected');
+            }
+        });
+
     </script>
 </body>
 </html>
