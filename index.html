@@ -90,15 +90,12 @@
             text-align: center;
         }
 
-        /* Styles for the new boat list */
         #boat-list-container {
-            /* REMOVED: max-height: 200px; */
-            /* REMOVED: overflow-y: auto; */
             border: 1px solid #b0c4de;
             border-radius: 4px;
             padding: 5px;
             background-color: white;
-            margin-bottom: 10px; /* Space between list and handicap input */
+            margin-bottom: 10px;
         }
         .boat-item {
             padding: 8px 10px;
@@ -113,7 +110,7 @@
             background-color: #e6f7ff;
         }
         .boat-item.selected {
-            background-color: #cce7ff; /* A slightly darker blue for selected */
+            background-color: #cce7ff;
             font-weight: bold;
             color: #003366;
         }
@@ -217,12 +214,20 @@
                 const boatItem = document.createElement('div');
                 boatItem.classList.add('boat-item');
                 boatItem.textContent = `${boat.name} (YS: ${boat.handicap})`;
-                boatItem.dataset.handicap = boat.handicap; // Store handicap in data attribute
-                boatItem.dataset.boatName = boat.name; // Store boat name for display
+                boatItem.dataset.handicap = boat.handicap;
+                boatItem.dataset.boatName = boat.name;
 
                 boatItem.addEventListener('click', function() {
-                    // Remove 'selected' class from any other item
                     const currentSelected = boatListContainer.querySelector('.boat-item.selected');
+
+                    // Only clear elapsed time IF a new boat is selected (different from current or if none was selected)
+                    if (!currentSelected || currentSelected !== this) {
+                        elapsedTimeInput.value = ''; // Clear elapsed time
+                        resultArea.style.display = 'none'; // Hide previous results
+                        errorMessageContainer.innerHTML = ''; // Clear previous errors
+                    }
+
+                    // Remove 'selected' class from any other item
                     if (currentSelected) {
                         currentSelected.classList.remove('selected');
                     }
@@ -234,7 +239,7 @@
             });
         }
 
-        populateBoatList(); // Call to populate the list on page load
+        populateBoatList();
 
         // --- Event Listener for Calculate Button ---
         calculateBtn.addEventListener('click', function() {
@@ -258,7 +263,7 @@
                 errorDiv.innerHTML = errors.join('<br>');
                 errorMessageContainer.appendChild(errorDiv);
                 if (isNaN(yardstickValue) || yardstickValue <= 0) {
-                     yardstickInput.focus(); // Focus on the input if it's the issue
+                     yardstickInput.focus();
                 } else {
                     elapsedTimeInput.focus();
                 }
@@ -269,13 +274,11 @@
             const correctedSeconds = (elapsedSeconds * 100) / yardstickValue;
             const correctedTimeString = secondsToTime(correctedSeconds);
 
-            // Display logic: if a boat was selected, show its name too
             const selectedBoatItem = boatListContainer.querySelector('.boat-item.selected');
             let yardstickDisplayValue = yardstickValue;
             if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.handicap) === yardstickValue) {
                 yardstickDisplayValue = `${selectedBoatItem.dataset.boatName} (YS: ${yardstickValue})`;
             }
-
 
             displayYardstick.textContent = yardstickDisplayValue;
             displayElapsedTime.textContent = elapsedTimeValue;
@@ -284,11 +287,28 @@
         });
 
         // Clear boat selection if handicap is manually changed
+        // Also clear elapsed time and results if handicap is manually changed, as it implies a new context
         yardstickInput.addEventListener('input', function() {
             const currentHandicap = parseFloat(this.value);
             const selectedBoatItem = boatListContainer.querySelector('.boat-item.selected');
+
+            // If a boat was selected AND its handicap doesn't match the manually entered one
             if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.handicap) !== currentHandicap) {
                 selectedBoatItem.classList.remove('selected');
+                elapsedTimeInput.value = ''; // Clear elapsed time
+                resultArea.style.display = 'none'; // Hide results
+                errorMessageContainer.innerHTML = ''; // Clear errors
+            }
+            // If no boat is selected, but the user is typing a handicap (and it's not empty)
+            // This handles the case where user types a handicap without clicking a boat.
+            // We clear elapsed time as they are defining a new "boat" context.
+            else if (!selectedBoatItem && this.value.trim() !== '') {
+                 // Check if the elapsed time input is already empty to avoid unnecessary clearing if they are just tabbing through
+                if (elapsedTimeInput.value.trim() !== '') {
+                    elapsedTimeInput.value = '';
+                    resultArea.style.display = 'none';
+                    errorMessageContainer.innerHTML = '';
+                }
             }
         });
 
