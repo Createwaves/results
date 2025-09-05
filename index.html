@@ -150,20 +150,24 @@
     <script>
         // --- Boat Data ---
         const boatsData = [
-            { name: "Sabre", handicap: 127 },
-            { name: "RS Neo", handicap: 124.3 },
-            { name: "Pacer", handicap: 127.5 },
-            { name: "Pacer Non Spinnaker", handicap: 130.4 },
-            { name: "Mirror", handicap: 143 },
-            { name: "Mirror Non Spinnaker", handicap: 146.3 },
-            { name: "Impulse", handicap: 118.5 },
+            { name: "59er", handicap: 96.4 },
+            { name: "Alpha Omega", handicap: 88 },
             { name: "Contender", handicap: 106.5 },
+            { name: "Corsair", handicap: 119.5 },
+            { name: "Corsair Non Spinnaker", handicap: 122.25 },
+            { name: "Impulse", handicap: 118.5 },
             { name: "Laser", handicap: 114 },
             { name: "Laser Radial", handicap: 118.5 },
+            { name: "Mirror", handicap: 143 },
+            { name: "Mirror Non Spinnaker", handicap: 146.3 },
             { name: "Moth Scow", handicap: 115 },
-            { name: "Alpha Omega", handicap: 88 },
-            { name: "Tasar", handicap: 108 },
-            { name: "59er", handicap: 96.4 }
+            { name: "Moth Skiff", handicap: 112 },
+            { name: "Pacer", handicap: 127.5 },
+            { name: "Pacer Non Spinnaker", handicap: 130.4 },
+            { name: "RS Neo", handicap: 124.3 },
+            { name: "Sabre", handicap: 127 },
+            { name: "Sabre Shark", handicap: 120 },
+            { name: "Tasar", handicap: 108 }
         ];
 
         // --- Utility Functions ---
@@ -208,7 +212,10 @@
         // --- Populate Boat List ---
         function populateBoatList() {
             boatListContainer.innerHTML = ''; // Clear existing items
-            boatsData.sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically
+            
+            // Although the source array is now sorted, this line ensures it remains sorted
+            // if the data is ever loaded dynamically in the future.
+            boatsData.sort((a, b) => a.name.localeCompare(b.name)); 
 
             boatsData.forEach(boat => {
                 const boatItem = document.createElement('div');
