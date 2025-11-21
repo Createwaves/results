@@ -127,7 +127,7 @@
     </div>
 
     <div class="form-group">
-        <label for="yardstick">Boat Handicap:</label>
+        <label for="yardstick">Rating:</label>
         <input type="number" id="yardstick" step="0.1" placeholder="Select from list or enter e.g., 118.5">
     </div>
 
@@ -142,7 +142,7 @@
 
     <div id="result-area" style="display: none;">
         <h2>Result:</h2>
-        <p><strong>Selected Boat/Yardstick:</strong> <span id="display-yardstick"></span></p>
+        <p><strong>Selected Boat:</strong> <span id="display-yardstick"></span></p>
         <p><strong>Entered Elapsed Time:</strong> <span id="display-elapsed-time"></span></p>
         <p><strong>Calculated Corrected Time:</strong> <span id="display-corrected-time"></span></p>
     </div>
@@ -150,25 +150,25 @@
     <script>
         // --- Boat Data ---
         const boatsData = [
-            { name: "59er", handicap: 96.4 },
-            { name: "Alpha Omega", handicap: 88 },
-            { name: "Contender", handicap: 106.5 },
-            { name: "Corsair", handicap: 119.5 },
-            { name: "Corsair Non Spinnaker", handicap: 122.25 },
-            { name: "Impulse", handicap: 118.5 },
-            { name: "Laser", handicap: 114 },
-            { name: "Laser Radial", handicap: 118.5 },
-            { name: "Mirror", handicap: 143 },
-            { name: "Mirror Non Spinnaker", handicap: 146.3 },
-            { name: "Moth Scow", handicap: 115 },
-            { name: "Moth Skiff", handicap: 112 },
-            { name: "Pacer", handicap: 127.5 },
-            { name: "Pacer Non Spinnaker", handicap: 130.4 },
-            { name: "Paper Tiger", handicap: 92.5 },
-            { name: "RS Neo", handicap: 124.3 },
-            { name: "Sabre", handicap: 127 },
-            { name: "Sabre Shark", handicap: 120 },
-            { name: "Tasar", handicap: 108 }
+            { name: "59er", rating: 96.4 },
+            { name: "Alpha Omega", rating: 88 },
+            { name: "Contender", rating: 106.5 },
+            { name: "Corsair", rating: 119.5 },
+            { name: "Corsair Non Spinnaker", rating: 122.25 },
+            { name: "Impulse", rating: 118.5 },
+            { name: "Laser", rating: 114 },
+            { name: "Laser Radial", rating: 118.5 },
+            { name: "Mirror", rating: 143 },
+            { name: "Mirror Non Spinnaker", rating: 146.3 },
+            { name: "Moth Scow", rating: 115 },
+            { name: "Moth Skiff", rating: 112 },
+            { name: "Pacer", rating: 127.5 },
+            { name: "Pacer Non Spinnaker", rating: 130.4 },
+            { name: "Paper Tiger", rating: 92.5 },
+            { name: "RS Neo", rating: 124.3 },
+            { name: "Sabre", rating: 127 },
+            { name: "Sabre Shark", rating: 120 },
+            { name: "Tasar", rating: 108 }
         ];
 
         // --- Utility Functions ---
@@ -215,14 +215,14 @@
             boatListContainer.innerHTML = ''; // Clear existing items
             
             // Although the source array is now sorted, this line ensures it remains sorted
-            // if the data is ever loaded dynamically in the future.
             boatsData.sort((a, b) => a.name.localeCompare(b.name)); 
 
             boatsData.forEach(boat => {
                 const boatItem = document.createElement('div');
                 boatItem.classList.add('boat-item');
-                boatItem.textContent = `${boat.name} (YS: ${boat.handicap})`;
-                boatItem.dataset.handicap = boat.handicap;
+                // Changed display to just show the number
+                boatItem.textContent = `${boat.name} (${boat.rating})`;
+                boatItem.dataset.rating = boat.rating;
                 boatItem.dataset.boatName = boat.name;
 
                 boatItem.addEventListener('click', function() {
@@ -241,7 +241,7 @@
                     }
                     // Add 'selected' class to the clicked item
                     this.classList.add('selected');
-                    yardstickInput.value = this.dataset.handicap;
+                    yardstickInput.value = this.dataset.rating;
                 });
                 boatListContainer.appendChild(boatItem);
             });
@@ -259,7 +259,7 @@
 
             let errors = [];
             if (isNaN(yardstickValue) || yardstickValue <= 0) {
-                errors.push('Please select a boat or enter a valid, positive Boat Handicap.');
+                errors.push('Please select a boat or enter a valid, positive number.');
             }
             if (!isValidTimeFormat(elapsedTimeValue)) {
                 errors.push('Please enter Elapsed Time in hh:mm:ss or hh mm ss format (e.g., 01:30:45 or 01 30 45).');
@@ -284,8 +284,9 @@
 
             const selectedBoatItem = boatListContainer.querySelector('.boat-item.selected');
             let yardstickDisplayValue = yardstickValue;
-            if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.handicap) === yardstickValue) {
-                yardstickDisplayValue = `${selectedBoatItem.dataset.boatName} (YS: ${yardstickValue})`;
+            if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.rating) === yardstickValue) {
+                // Changed result display to just show the number
+                yardstickDisplayValue = `${selectedBoatItem.dataset.boatName} (${yardstickValue})`;
             }
 
             displayYardstick.textContent = yardstickDisplayValue;
@@ -294,24 +295,20 @@
             resultArea.style.display = 'block';
         });
 
-        // Clear boat selection if handicap is manually changed
-        // Also clear elapsed time and results if handicap is manually changed, as it implies a new context
+        // Clear boat selection if rating is manually changed
         yardstickInput.addEventListener('input', function() {
-            const currentHandicap = parseFloat(this.value);
+            const currentRating = parseFloat(this.value);
             const selectedBoatItem = boatListContainer.querySelector('.boat-item.selected');
 
-            // If a boat was selected AND its handicap doesn't match the manually entered one
-            if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.handicap) !== currentHandicap) {
+            // If a boat was selected AND its rating doesn't match the manually entered one
+            if (selectedBoatItem && parseFloat(selectedBoatItem.dataset.rating) !== currentRating) {
                 selectedBoatItem.classList.remove('selected');
                 elapsedTimeInput.value = ''; // Clear elapsed time
                 resultArea.style.display = 'none'; // Hide results
                 errorMessageContainer.innerHTML = ''; // Clear errors
             }
-            // If no boat is selected, but the user is typing a handicap (and it's not empty)
-            // This handles the case where user types a handicap without clicking a boat.
-            // We clear elapsed time as they are defining a new "boat" context.
+            // If no boat is selected, but the user is typing a rating
             else if (!selectedBoatItem && this.value.trim() !== '') {
-                 // Check if the elapsed time input is already empty to avoid unnecessary clearing if they are just tabbing through
                 if (elapsedTimeInput.value.trim() !== '') {
                     elapsedTimeInput.value = '';
                     resultArea.style.display = 'none';
